@@ -4,17 +4,24 @@ import numpy as np
 import math
 import time
 from roboflow import Roboflow
+import os
+import string
+from glob import glob
+from ultralytics import YOLO
+
+PATH_TO_MODEL = 'yolov8/training_results/sign_language/weights/best.pt'
+model = YOLO(PATH_TO_MODEL)
 
 cap = cv2.VideoCapture(0)
-detector = HandDetector(maxHands=1)
 offset = 20
 imgSize = 300
+classes = dict( (i, key) for i,key in enumerate(string.ascii_lowercase))
 
-rf = Roboflow(api_key="xryMW9j32H1tQ20ehfWF")
-project = rf.workspace().project("american-sign-language-letters-l980l")
-model = project.version(1).model
+detector = HandDetector(maxHands=1)
 
 def hands_feed():
+    count = 0
+    letter_count = 0
     while True:
         ret,frame = cap.read()
         hands = detector.findHands(frame, draw=False)
@@ -42,16 +49,46 @@ def hands_feed():
                 hGap = math.ceil((imgSize-height)/2)
                 imgWhite[hGap:height+hGap,:] = imgResize
 
+            if count > 5:
+                count = 0
+                letter_count += 1
+                cv2.imwrite(f"imglib/image_{letter_count}.jpg",imgWhite)
+            count += 1
+            results = model.predict(source=imgWhite, conf=0.3, show=True)[0]
+        
+        else:
+            count = 0
+            
+            #cv2.imshow("Whites", imgWhite)
 
-            cv2.imshow("Cropped Image",imgCrop)
-            cv2.imshow("Whites", imgWhite)
-
-        cv2.imshow("frame",frame)
+        #cv2.imshow("frame",frame)
         if cv2.waitKey(1) == ord("q"):
             break
-    
+
     cap.release()
     cv2.destroyAllWindows()
 
+def predict_image():
+    folder = "imglib/"
+    images = glob(os.path.join(folder,"*jpg"))
+    for image in images:
+        img = cv2.imread(image)
+        results = model.predict(source = img, conf = 0.5)[0]
+        if results.boxes:
+            for i,obj in enumerate(results.boxes):
+                x1, y1, x2, y2, conf, cls = obj.data.cpu().detach().numpy()[0]
+                print(classes[int(cls)])
+        else:
+            print("NULL")
+
+def reset_images():
+    folder = "imglib/"
+    files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
+    for file in files:
+        os.remove(os.path.join(folder, file))
+
 if __name__== "__main__":
+    reset_images()
     hands_feed()
+    predict_image()
+    

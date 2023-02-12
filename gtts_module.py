@@ -1,4 +1,5 @@
 # This requires internet connection to work, if required to work without internet use the other file
+# if error use playsound 1.2.2
 
 import os
 import playsound
@@ -17,5 +18,5 @@ class gttsModule:
         playsound.playsound(f"{self.path}/talk.mp3")
 
 if __name__ == "__main__":
-    engine = gttsModule("hello fucker")
+    engine = gttsModule(text="hello fucker")
     engine.speak()

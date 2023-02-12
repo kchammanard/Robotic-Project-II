@@ -7,6 +7,7 @@ from roboflow import Roboflow
 import os
 import string
 from glob import glob
+import pyttsx3
 from ultralytics import YOLO
 
 PATH_TO_MODEL = 'yolov8/training_results/sign_language/weights/best.pt'
@@ -18,6 +19,7 @@ imgSize = 300
 classes = dict( (i, key) for i,key in enumerate(string.ascii_lowercase))
 
 detector = HandDetector(maxHands=1)
+sentence = []
 
 def hands_feed():
     count = 0
@@ -77,9 +79,11 @@ def predict_image():
         if results.boxes:
             for i,obj in enumerate(results.boxes):
                 x1, y1, x2, y2, conf, cls = obj.data.cpu().detach().numpy()[0]
-                print(classes[int(cls)])
+                letter = classes[int(cls)]
+                sentence.append(letter)
         else:
-            print("NULL")
+            sentence.append(" ")
+    print("".join(sentence))
 
 def reset_images():
     folder = "imglib/"
@@ -87,8 +91,13 @@ def reset_images():
     for file in files:
         os.remove(os.path.join(folder, file))
 
+def text_to_speech():
+    engine = pyttsx3.init()
+    engine.say("".join(sentence))
+    engine.runAndWait()
+
 if __name__== "__main__":
     reset_images()
     hands_feed()
     predict_image()
-    
+    text_to_speech()

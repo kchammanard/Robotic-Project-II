@@ -9,8 +9,8 @@ SAVE_PATH = "./voutput"
 
 class gttsModule:
 
-    def __init__(self, text, language="en", save_path=SAVE_PATH):
-        self.engine = gTTS(text, tld="com", lang=language, slow=False)
+    def __init__(self, text, language="en", save_path=SAVE_PATH, accent="com"):
+        self.engine = gTTS(text, tld=accent, lang=language, slow=False)
         self.path = save_path
         self.engine.save(f"{self.path}/talk.mp3")
 
@@ -18,5 +18,5 @@ class gttsModule:
         playsound.playsound(f"{self.path}/talk.mp3")
 
 if __name__ == "__main__":
-    engine = gttsModule(text="hello fucker")
+    engine = gttsModule(text="hello fucker", accent="com")
     engine.speak()

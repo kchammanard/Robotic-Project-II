@@ -1,103 +1,132 @@
 import cv2
 from cvzone.HandTrackingModule import HandDetector
-import numpy as np 
 import math
 import time
-from roboflow import Roboflow
 import os
 import string
 from glob import glob
 import pyttsx3
-from ultralytics import YOLO
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.models import load_model
+from HandTracking import HandTracking
 
-PATH_TO_MODEL = 'yolov8/training_results/sign_language/weights/best.pt'
-model = YOLO(PATH_TO_MODEL)
+model = load_model("test/asl_model.h5",compile= False)
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+              loss=tf.keras.losses.BinaryCrossentropy(),
+              metrics=[tf.keras.metrics.BinaryAccuracy(),
+                       tf.keras.metrics.FalseNegatives()])
 
 cap = cv2.VideoCapture(0)
 offset = 20
 imgSize = 300
 classes = dict( (i, key) for i,key in enumerate(string.ascii_lowercase))
+classes[26] = ' '
+classes[27] = '.'
 
 detector = HandDetector(maxHands=1)
 sentence = []
 
+
 def hands_feed():
+    HT = HandTracking()
+
     count = 0
-    letter_count = 0
-    while True:
-        ret,frame = cap.read()
-        hands = detector.findHands(frame, draw=False)
-        #hands, frame = detector.findHands(frame)
-        if hands:
-            hand = hands[0]
-            x,y,w,h = hand['bbox']
+    color = (0, 0, 255)
 
-            imgWhite = np.ones((imgSize,imgSize,3),np.uint8)*255  #uint8 is 0-255
-            imgCrop = frame[y-offset:y+h+offset,x-offset:x+w+offset]
+    # capture from live web cam
+    cap = cv2.VideoCapture(0)
+    frame_width, frame_height = int(cap.get(3)), int(cap.get(4))
 
-            aspectRatio = h/w
+    start = time.time()
+    pred = "No predictions"
+    prev_pred = None
+    l = []
+    while cap.isOpened():
+        insert = False
 
-            if aspectRatio > 1:
-                k = imgSize/h
-                width = math.ceil(k*w)
-                imgResize = cv2.resize(imgCrop,(width,imgSize))
-                wGap = math.ceil((imgSize-width)/2)
-                imgWhite[:,wGap:width+wGap] = imgResize
+        ret, frame = cap.read()
+        if not ret:
+            print("Ignoring empty camera frame.")
+            continue
 
-            else:
-                k = imgSize/w
-                height = math.ceil(k*h)
-                imgResize = cv2.resize(imgCrop,(imgSize,height))
-                hGap = math.ceil((imgSize-height)/2)
-                imgWhite[hGap:height+hGap,:] = imgResize
+        image = frame.copy()
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image.flags.writeable = False
 
-            if count > 5:
-                count = 0
-                letter_count += 1
-                cv2.imwrite(f"imglib/image_{letter_count}.jpg",imgWhite)
-            count += 1
-            results = model.predict(source=imgWhite, conf=0.3, show=True)[0]
+        # hand tracking
+        hands_results = HT.track(image)
+
+        image.flags.writeable = True
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+        # init frame each loop
+        HT.read_results(image, hands_results)
+
+        if hands_results.multi_hand_landmarks:
+            HT.draw_hand()
+            HT.draw_hand_label()
+
+            hand = hands_results.multi_hand_landmarks[0]
+            l = []
+            for i in range(21):
+                l += HT.get_moy_coords(hand, i)
+
+            # sl = ",".join(map(str, l))
+            # print(sl)
+        else: 
+            pred = "No predictions"
+
+        if len(l) == 0:
+            pass
+        else:
+            a = [l]
+            p = model.predict(a)    
+            p_index = np.argmax(p, axis=1)
+            pred = classes[int(str(p_index)[1:-1])]
         
+        print("prev pred:", prev_pred)
+        print("pred:",pred)
+
+        if prev_pred == pred:
+            count += 1
+            if count >= 5:
+                color = (0,255,0)
+                count = 0
+                insert = True
         else:
             count = 0
-            
-            #cv2.imshow("Whites", imgWhite)
+            color = (0,0,255)
 
-        #cv2.imshow("frame",frame)
-        if cv2.waitKey(1) == ord("q"):
+        if pred != "No predictions":
+            prev_pred = pred
+        
+        if insert:
+            sentence.append(pred)
+
+        print(insert)
+
+        cv2.putText(image, "".join(sentence) + pred, (10, frame_height - 10), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    color, 2)
+
+        cv2.imshow("image", image)
+
+        key = cv2.waitKey(250)
+
+        if key == ord("q"):
+            cap.release()
             break
 
-    cap.release()
     cv2.destroyAllWindows()
-
-def predict_image():
-    folder = "imglib/"
-    images = glob(os.path.join(folder,"*jpg"))
-    for image in images:
-        img = cv2.imread(image)
-        results = model.predict(source = img, conf = 0.5)[0]
-        if results.boxes:
-            for i,obj in enumerate(results.boxes):
-                x1, y1, x2, y2, conf, cls = obj.data.cpu().detach().numpy()[0]
-                letter = classes[int(cls)]
-                sentence.append(letter)
-        else:
-            sentence.append(" ")
-    print("".join(sentence))
-
-def reset_images():
-    folder = "imglib/"
-    files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
-    for file in files:
-        os.remove(os.path.join(folder, file))
 
 def text_to_speech():
     engine = pyttsx3.init()
     engine.say("".join(sentence))
     engine.runAndWait()
+    print("".join(sentence))
 
 if __name__== "__main__":
-    reset_images()
     hands_feed()
-    predict_image()
     text_to_speech()
+

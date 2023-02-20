@@ -1,5 +1,5 @@
 import cv2
-from HandTrackingModule import HandDetector
+from HandTrackingModule import handDetector
 import math
 import time
 import os
@@ -24,8 +24,9 @@ imgSize = 300
 classes = dict( (i, key) for i,key in enumerate(string.ascii_lowercase))
 classes[26] = ' '
 classes[27] = '.'
+classes[28] = 'back'
 
-detector = HandDetector(maxHands=1)
+detector = handDetector(maxHands=1)
 sentence = []
 
 
@@ -64,12 +65,12 @@ def hands_feed():
         # init frame each loop
         HT.read_results(image, hands_results)
 
+        l = []
         if hands_results.multi_hand_landmarks:
             HT.draw_hand()
             HT.draw_hand_label()
 
             hand = hands_results.multi_hand_landmarks[0]
-            l = []
             for i in range(21):
                 l += HT.get_moy_coords(hand, i)
 
@@ -78,8 +79,11 @@ def hands_feed():
         else: 
             pred = "No predictions"
 
+        print(l)
+        print(len(l))
+
         if len(l) == 0:
-            pass
+            pred = ""
         else:
             a = [l]
             p = model.predict(a)    
@@ -97,12 +101,18 @@ def hands_feed():
                 insert = True
         else:
             count = 0
+            prev_pred = None
             color = (0,0,255)
 
         if pred != "No predictions":
             prev_pred = pred
         
         if insert:
+            if pred == ".":
+                print("sentence captured")
+                break
+            elif pred == "back" and len(sentence) != 0:
+                sentence.pop()
             sentence.append(pred)
 
         print(insert)
@@ -115,9 +125,9 @@ def hands_feed():
         key = cv2.waitKey(250)
 
         if key == ord("q"):
-            cap.release()
             break
 
+    cap.release()
     cv2.destroyAllWindows()
 
 def text_to_speech():

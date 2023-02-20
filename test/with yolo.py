@@ -6,9 +6,8 @@ import time
 from roboflow import Roboflow
 import os
 import string
-import pyttsx3
-import keyboard
 from glob import glob
+import pyttsx3
 from ultralytics import YOLO
 
 PATH_TO_MODEL = 'yolov8/training_results/sign_language/weights/best.pt'
@@ -18,9 +17,12 @@ cap = cv2.VideoCapture(0)
 offset = 20
 imgSize = 300
 classes = dict( (i, key) for i,key in enumerate(string.ascii_lowercase))
+classes[26] = ' '
+classes[27] = '.'
 
 detector = HandDetector(maxHands=1)
 sentence = []
+
 
 def hands_feed():
     count = 0
@@ -52,10 +54,10 @@ def hands_feed():
                 hGap = math.ceil((imgSize-height)/2)
                 imgWhite[hGap:height+hGap,:] = imgResize
 
-            if keyboard.read_key() == "t":
+            if count > 5:
+                count = 0
+                letter_count += 1
                 cv2.imwrite(f"imglib/image_{letter_count}.jpg",imgWhite)
-            else:pass
-            
             count += 1
             results = model.predict(source=imgWhite, conf=0.3, show=True)[0]
         

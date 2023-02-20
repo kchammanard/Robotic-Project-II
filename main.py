@@ -12,7 +12,7 @@ from tensorflow import keras
 from tensorflow.keras.models import load_model
 from HandTracking import HandTracking
 
-model = load_model("test/asl_model.h5",compile= False)
+model = load_model("test/asl_model2.h5",compile= False)
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=[tf.keras.metrics.BinaryAccuracy(),

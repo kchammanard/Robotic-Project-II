@@ -17,6 +17,10 @@
 # p = model.predict(b)
 # print(p)
 # print(np.argmax(p, axis=1))
-s = "[10]"
-print(s[1:-1])
+# s = "[10]"
+# print(s[1:-1])
 
+a = []
+a += tuple([1,2])
+a += tuple([3,4])
+print(a)

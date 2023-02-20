@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-from adafruit_servokit import ServoKit (do lesson 31 to config servo)
+from adafruit_servokit import ServoKit 
+# (do lesson 31 to config servo)
 
 kit = ServoKit(channels=16) #servo driver has 16 channels
 

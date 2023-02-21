@@ -27,9 +27,12 @@ classes[26] = ' '
 classes[27] = '.'
 classes[28] = 'back'
 
+sentence = []
+
 HEADER = 64 #first message to server will always be of 64 bytes, and will tell us the size of the next message
 PORT = 5050
-SERVER = socket.gethostbyname(socket.gethostname())
+# SERVER = socket.gethostbyname(socket.gethostname())
+SERVER = "10.202.250.150"
 ADDR = (SERVER,PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -50,9 +53,45 @@ def handle_client(conn,addr):
             msg = conn.recv(msg_length).decode(FORMAT)
             if msg == DISCONNECT_MESSAGE:
                 connected = False
+
+            pred = "No predictions"
+            prev_pred = None
+            insert = False
+            l = eval(msg)
             
-            print(f"[{addr}] {msg}")
+            if len(l) == 0:
+                pred = ""
+            else:
+                a = [l]
+                p = model.predict(a)    
+                p_index = np.argmax(p, axis=1)
+                pred = classes[int(str(p_index)[1:-1])]
+
+            if prev_pred == pred:
+                count += 1
+                if count >= 5:
+                    color = (0,255,0)
+                    count = 0
+                    insert = True
+            else:
+                count = 0
+                prev_pred = None
+                color = (0,0,255)
+
+            if pred != "No predictions":
+                prev_pred = pred
             
+            if insert:
+                if pred == ".":
+                    print("sentence captured")
+                    break
+                elif pred == "back" and len(sentence) != 0:
+                    sentence.pop()
+                else:
+                    sentence.append(pred)
+
+            #print(f"[{addr}] {msg}")
+            print(pred)
             conn.send("Msg received".encode(FORMAT))
     conn.close()
 

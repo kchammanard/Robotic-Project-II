@@ -1,7 +1,8 @@
-# folders
+# folders to ignore
 venv/
 imglib/
 voutput/
+test/
 
 # bytes processed
 * .pyc

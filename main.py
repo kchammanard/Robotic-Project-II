@@ -1,8 +1,6 @@
 import cv2
 from HandTrackingModule import handDetector
-import math
 import time
-import os
 import string
 from glob import glob
 import pyttsx3
@@ -10,9 +8,9 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from keras.models import load_model
-from HandTracking import HandTracking
+from socket_module.HandTracking import HandTracking
 
-model = load_model("test/asl_model2.h5",compile= False)
+model = load_model("trained_models/asl_model2.h5",compile= False)
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=[tf.keras.metrics.BinaryAccuracy(),
@@ -140,4 +138,3 @@ def text_to_speech():
 if __name__== "__main__":
     hands_feed()
     text_to_speech()
-

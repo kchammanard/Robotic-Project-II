@@ -30,9 +30,9 @@ classes[28] = 'back'
 sentence = []
 
 HEADER = 64 #first message to server will always be of 64 bytes, and will tell us the size of the next message
-PORT = 5050
+PORT = 10001
 # SERVER = socket.gethostbyname(socket.gethostname())
-SERVER = "10.202.250.150"
+SERVER = "172.20.10.3"
 ADDR = (SERVER,PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"

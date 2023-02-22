@@ -1,4 +1,8 @@
+# folders
 venv/
 imglib/
 voutput/
+
+# bytes processed
+* .pyc
 __pycache__/

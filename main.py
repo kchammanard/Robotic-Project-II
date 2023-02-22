@@ -1,14 +1,15 @@
 import cv2
-from HandTrackingModule import handDetector
 import time
 import string
 from glob import glob
-import pyttsx3
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from keras.models import load_model
+
 from socket_module.HandTracking import HandTracking
+from HandTrackingModule import handDetector
+from tts_module.tts_module import ttsModule
 
 model = load_model("trained_models/asl_model2.h5",compile= False)
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
@@ -39,7 +40,7 @@ def hands_feed():
     frame_width, frame_height = int(cap.get(3)), int(cap.get(4))
 
     start = time.time()
-    pred = "No predictions"
+    pred = ""
     prev_pred = None
     l = []
     while cap.isOpened():
@@ -75,7 +76,7 @@ def hands_feed():
             # sl = ",".join(map(str, l))
             # print(sl)
         else: 
-            pred = "No predictions"
+            pred = ""
 
         print(l)
         print(len(l))
@@ -89,9 +90,9 @@ def hands_feed():
             pred = classes[int(str(p_index)[1:-1])]
         
         print("prev pred:", prev_pred)
-        print("pred:",pred)
+        print("pred:", pred)
 
-        if prev_pred == pred:
+        if prev_pred == pred and pred != "":
             count += 1
             if count >= 5:
                 color = (0,255,0)
@@ -102,16 +103,19 @@ def hands_feed():
             prev_pred = None
             color = (0,0,255)
 
-        if pred != "No predictions":
+        if pred != "":
             prev_pred = pred
         
         if insert:
             if pred == ".":
                 print("sentence captured")
+                text_to_speech(text="sentence captured")
                 break
             elif pred == "back" and len(sentence) != 0:
+                text_to_speech("deleting previous character")
                 sentence.pop()
             else:
+                text_to_speech(text=f"appending {pred}")
                 sentence.append(pred)
 
         print(insert)
@@ -129,12 +133,12 @@ def hands_feed():
     cap.release()
     cv2.destroyAllWindows()
 
-def text_to_speech():
-    engine = pyttsx3.init()
-    engine.say("".join(sentence))
-    engine.runAndWait()
-    print("".join(sentence))
+def text_to_speech(text):
+    engine = ttsModule(text=text)
+    engine.change_property(rate=100, volume=0.8, gender="f")
+    engine.speak()
+
 
 if __name__== "__main__":
     hands_feed()
-    text_to_speech()
+    text_to_speech("".join(sentence))

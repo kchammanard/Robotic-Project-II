@@ -53,7 +53,7 @@ def handle_client(conn,addr):
             if msg == DISCONNECT_MESSAGE:
                 connected = False
 
-            pred = "No predictions"
+            pred = ""
             prev_pred = None
             insert = False
             l = eval(msg)
@@ -77,7 +77,7 @@ def handle_client(conn,addr):
                 prev_pred = None
                 color = (0,0,255)
 
-            if pred != "No predictions":
+            if pred != "":
                 prev_pred = pred
             
             if insert:

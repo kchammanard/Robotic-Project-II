@@ -109,13 +109,16 @@ def hands_feed():
         if insert:
             if pred == ".":
                 print("sentence captured")
-                text_to_speech(text="sentence captured")
+                text_to_speech(text="end")
                 break
             elif pred == "back" and len(sentence) != 0:
-                text_to_speech("deleting previous character")
+                text_to_speech("delete")
                 sentence.pop()
             else:
-                text_to_speech(text=f"appending {pred}")
+                if pred == " ":
+                    text_to_speech(text="space")
+                else:
+                    text_to_speech(text=pred)
                 sentence.append(pred)
 
         print(insert)
@@ -139,6 +142,7 @@ def text_to_speech(text):
     engine.speak()
 
 
-if __name__== "__main__":
+if __name__ == "__main__":
     hands_feed()
-    text_to_speech("".join(sentence))
+    text = "".join(sentence)
+    text_to_speech(text=text)

@@ -11,6 +11,7 @@ import tensorflow as tf
 from tensorflow import keras
 from keras.models import load_model
 from socket_module.HandTracking import HandTracking
+from tts_module.tts_module import ttsModule
 
 model = load_model("trained_models/asl_model2.h5",compile= False)
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
@@ -66,7 +67,7 @@ def handle_client(conn,addr):
                 p_index = np.argmax(p, axis=1)
                 pred = classes[int(str(p_index)[1:-1])]
 
-            if prev_pred == pred:
+            if prev_pred == pred and pred != "":
                 count += 1
                 if count >= 5:
                     color = (0,255,0)
@@ -83,10 +84,16 @@ def handle_client(conn,addr):
             if insert:
                 if pred == ".":
                     print("sentence captured")
+                    text_to_speech(text="end")
                     break
                 elif pred == "back" and len(sentence) != 0:
+                    text_to_speech("delete")
                     sentence.pop()
                 else:
+                    if pred == " ":
+                        text_to_speech(text="space")
+                    else:
+                        text_to_speech(text=pred)
                     sentence.append(pred)
 
             #print(f"[{addr}] {msg}")
@@ -103,6 +110,11 @@ def start():
         thread = threading.Thread(target= handle_client,args= (conn,addr))
         thread.start()
         print("[ACTIVE CONNECTIONS]" , threading.active_count()-1) #start thread is running always so -1
+
+def text_to_speech(text):
+    engine = ttsModule(text=text)
+    engine.change_property(rate=100, volume=0.8, gender="f")
+    engine.speak()
 
 print("server starting")
 start()
